@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANOVA Simulation (One Between)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            margin: 0 5px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .unit-toggle {
+            display: inline-flex;
+            gap: 5px;
+            margin-left: 15px;
+        }
+        .unit-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .unit-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .unit-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .table-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .table-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        .anova-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+        .anova-table thead {
+            background: #667eea;
+            color: white;
+        }
+        .anova-table th {
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+        }
+        .anova-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            font-family: 'Courier New', monospace;
+        }
+        .anova-table tbody tr:hover {
+            background: #f5f5f5;
+        }
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .critical-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .critical-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .critical-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .sliders-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .slider-container {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .slider-label {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .slider-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+        .legend-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            margin-top: 20px;
+        }
+        .legend-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+        .legend-marker {
+            display: inline-block;
+            width: 30px;
+            height: 2px;
+            flex-shrink: 0;
+            margin-top: 7px;
+        }
+        .legend-between {
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+        }
+        .legend-within {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="2"><line x1="0" y1="1" x2="30" y2="1" stroke="rgba(150,100,150,0.7)" stroke-width="2" stroke-dasharray="5,5"/></svg>');
+            background-repeat: repeat-x;
+            background-size: 30px 2px;
+        }
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .info-box strong {
+            color: #667eea;
+        }
+        .formula-box {
+            background: #f0f0f8;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            line-height: 1.8;
+            color: #333;
+        }
+        .formula-line {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .formula-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ANOVA Simulation (One Between)</h1>
+        
+        <div class="controls">
+            <button onclick="generateData()">Daten neu generieren</button>
+            <div class="unit-toggle">
+                <button class="unit-btn active" onclick="switchUnit('raw')">Differenz zwischen Gruppenmittelwerten</button>
+                <button class="unit-btn" onclick="switchUnit('eta2')">Eta-Quadrat</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-wrapper">
+                <canvas id="zChart"></canvas>
+            </div>
+            
+            <div class="right-panel">
+                <div class="table-section">
+                    <h3>ANOVA Ergebnistabelle</h3>
+                    <table class="anova-table">
+                        <thead>
+                            <tr>
+                                <th>Quelle</th>
+                                <th>QS</th>
+                                <th>df</th>
+                                <th>MS</th>
+                                <th>F</th>
+                                <th>η²</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="6" style="text-align: center;">Laden...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="formula-box">
+                    <div class="formula-line" id="formulaBox">
+                        $$F = \frac{MS_{\text{zwischen}}}{MS_{\text{innerhalb}}} = \frac{0.00}{0.00} = 0.00$$
+                    </div>
+                </div>
+                
+                <div class="critical-box">
+                    <div class="critical-label"><strong>Kritischer F-Wert (α = 0.05):</strong></div>
+                    <div class="critical-value">
+                        F<sub>krit</sub>(<span id="dfLabel">2, 87</span>) = <span id="fValue">3.11</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sliders-section">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span id="effectLabel">Differenz zwischen Gruppenmittelwerten (Δ)</span>
+                    <span class="slider-value" id="effectValue">0</span>
+                </div>
+                <input type="range" id="effectSlider" oninput="onSliderChange()">
+                <div class="info-text">μ₁ = 100, μ₂ = 100 + Δ, μ₃ = 100 - Δ</div>
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Stichprobengröße pro Gruppe</span>
+                    <span class="slider-value" id="sampleValue">30</span>
+                </div>
+                <input type="range" min="5" max="100" step="5" value="30" id="sampleSlider" oninput="onSliderChange()">
+                <div class="info-text">n pro Gruppe</div>
+            </div>
+        </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.2/jstat.min.js"></script>
+    <script>
+        let data1 = [];
+        let data2 = [];
+        let data3 = [];
+        let myChart = null;
+        let effect = 0;
+        let sampleSize = 30;
+        let effectUnit = 'raw';
+
+        // Box-Muller für standardnormalverteilte Zufallszahlen
+        function randNormal(mean = 0, std = 1) {
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+            return mean + z * std;
+        }
+
+        function switchUnit(unit) {
+            effectUnit = unit;
+            document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (unit === 'raw') {
+                document.getElementById('effectLabel').textContent = 'Differenz zwischen Gruppenmittelwerten (Δ)';
+                document.getElementById('effectSlider').max = '50';
+                document.getElementById('effectSlider').step = '1';
+                document.getElementById('effectSlider').value = '0';
+                document.getElementById('effectValue').textContent = '0';
+            } else {
+                document.getElementById('effectLabel').textContent = 'Eta-Quadrat (η²)';
+                document.getElementById('effectSlider').max = '1';
+                document.getElementById('effectSlider').step = '0.01';
+                document.getElementById('effectSlider').value = '0';
+                document.getElementById('effectValue').textContent = '0.00';
+            }
+            generateData();
+        }
+
+        function onSliderChange() {
+            effect = parseFloat(document.getElementById('effectSlider').value);
+            sampleSize = parseInt(document.getElementById('sampleSlider').value);
+            
+            if (effectUnit === 'raw') {
+                document.getElementById('effectValue').textContent = effect.toFixed(1);
+            } else {
+                document.getElementById('effectValue').textContent = effect.toFixed(2);
+            }
+            document.getElementById('sampleValue').textContent = sampleSize;
+            
+            generateData();
+        }
+
+        function eta2ToEffect(eta2) {
+            if (eta2 <= 0) return 0;
+            if (eta2 >= 1) return 50;
+            const f = Math.sqrt(eta2 / (1 - eta2));
+            return f * 15;
+        }
+
+        function generateData() {
+            const sigma = 15;
+            let delta = effect;
+            
+            if (effectUnit === 'eta2') {
+                delta = eta2ToEffect(effect);
+            }
+            
+            const mu1 = 100;
+            const mu2 = 100 + delta;
+            const mu3 = 100 - delta;
+            
+            // Generiere Daten
+            data1 = [];
+            data2 = [];
+            data3 = [];
+            
+            for (let i = 0; i < sampleSize; i++) {
+                data1.push(randNormal(mu1, sigma));
+                data2.push(randNormal(mu2, sigma));
+                data3.push(randNormal(mu3, sigma));
+            }
+            
+            updateChart();
+            updateTable();
+        }
+
+        function calcMean(arr) {
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        function calcStd(arr, mean) {
+            const variance = arr.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / (arr.length - 1);
+            return Math.sqrt(variance);
+        }
+
+        function updateChart() {
+            const allData = [...data1, ...data2, ...data3];
+            const grandMean = calcMean(allData);
+            
+            // Gepoolte Standardabweichung
+            const n = sampleSize;
+            const N = n * 3;
+            const mean1 = calcMean(data1);
+            const mean2 = calcMean(data2);
+            const mean3 = calcMean(data3);
+            const std1 = calcStd(data1, mean1);
+            const std2 = calcStd(data2, mean2);
+            const std3 = calcStd(data3, mean3);
+            
+            const pooledVar = (
+                data1.reduce((sum, x) => sum + Math.pow(x - mean1, 2), 0) +
+                data2.reduce((sum, x) => sum + Math.pow(x - mean2, 2), 0) +
+                data3.reduce((sum, x) => sum + Math.pow(x - mean3, 2), 0)
+            ) / (N - 3);
+            const pooledStd = Math.sqrt(pooledVar);
+            
+            // Z-Transformation: z = (x - grandMean) / pooledStd
+            const zData1 = data1.map(x => (x - grandMean) / pooledStd);
+            const zData2 = data2.map(x => (x - grandMean) / pooledStd);
+            const zData3 = data3.map(x => (x - grandMean) / pooledStd);
+            
+            const zMean1 = calcMean(zData1);
+            const zMean2 = calcMean(zData2);
+            const zMean3 = calcMean(zData3);
+            const zGrandMean = 0;  // Grand mean ist immer 0 nach Z-Transformation
+            
+            // Berechne Within-Group Varianz (in Z-Einheiten)
+            const withinVar1 = zData1.reduce((sum, x) => sum + Math.pow(x - zMean1, 2), 0) / (n - 1);
+            const withinVar2 = zData2.reduce((sum, x) => sum + Math.pow(x - zMean2, 2), 0) / (n - 1);
+            const withinVar3 = zData3.reduce((sum, x) => sum + Math.pow(x - zMean3, 2), 0) / (n - 1);
+            const withinStd = Math.sqrt((withinVar1 + withinVar2 + withinVar3) / 3);
+            
+            // Generiere Kurven
+            const zMin = -6;
+            const zMax = 6;
+            const numPoints = 300;
+            const zValues = [];
+            
+            for (let i = 0; i < numPoints; i++) {
+                zValues.push(zMin + (zMax - zMin) * i / (numPoints - 1));
+            }
+            
+            // Standardnormalverteilung
+            const stdNormal = (z) => (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * z * z);
+            
+            const curve1 = zValues.map(z => stdNormal(z - zMean1));
+            const curve2 = zValues.map(z => stdNormal(z - zMean2));
+            const curve3 = zValues.map(z => stdNormal(z - zMean3));
+            
+            // Chart zerstören wenn vorhanden
+            if (myChart) {
+                myChart.destroy();
+            }
+            
+            // Neuer Chart
+            const ctx = document.getElementById('zChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: zValues.map(z => z.toFixed(2)),
+                    datasets: [
+                        {
+                            label: `Gruppe 1 (μ1 = ${zMean1.toFixed(2)})`,
+                            data: curve1,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.15)',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: `Gruppe 2 (μ2 = ${zMean2.toFixed(2)})`,
+                            data: curve2,
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118, 75, 162, 0.15)',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: `Gruppe 3 (μ3 = ${zMean3.toFixed(2)})`,
+                            data: curve3,
+                            borderColor: '#ed64a6',
+                            backgroundColor: 'rgba(237, 100, 166, 0.15)',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'zwischen',
+                            data: [],
+                            borderColor: 'rgba(0, 0, 0, 0.6)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            showLine: true
+                        },
+                        {
+                            label: 'innerhalb',
+                            data: [],
+                            borderColor: 'rgba(150, 100, 150, 0.7)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            showLine: true
+                        },
+                        {
+                            label: 'Gesamt-Mittelwert',
+                            data: [],
+                            borderColor: 'rgba(100, 100, 100, 0.9)',
+                            borderWidth: 4,
+                            pointRadius: 0,
+                            showLine: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Verteilung pro Gruppe in der Abhängigen Variable',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 15,
+                                font: { size: 11 }
+                            }
+                        },
+                        filler: {
+                            propagate: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            beginAtZero: true,
+                            max: 0.5,
+                            title: {
+                                display: true,
+                                text: 'Dichte'
+                            },
+                            ticks: {
+                                font: { size: 10 }
+                            }
+                        },
+                        x: {
+                            type: 'linear',
+                            min: zMin,
+                            max: zMax,
+                            title: {
+                                display: true,
+                                text: 'z-Wert'
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'varianceAndMeanLines',
+                    afterDatasetsDraw(chart) {
+                        const {ctx, chartArea: {left, top, width, height}} = chart;
+                        const xScale = chart.scales.x;
+                        const yScale = chart.scales.y;
+                        
+                        // ===== VERTIKALE LINIEN FÜR GRUPPENMITTELWERTE =====
+                        const means = [zMean1, zMean2, zMean3];
+                        const colors = ['#667eea', '#764ba2', '#ed64a6'];
+                        
+                        means.forEach((mean, idx) => {
+                            const xPixel = xScale.getPixelForValue(mean);
+                            if (xPixel >= left && xPixel <= left + width) {
+                                ctx.strokeStyle = colors[idx];
+                                ctx.lineWidth = 2;
+                                ctx.setLineDash([]);
+                                ctx.globalAlpha = 0.8;
+                                ctx.beginPath();
+                                ctx.moveTo(xPixel, top);
+                                ctx.lineTo(xPixel, top + height);
+                                ctx.stroke();
+                                ctx.globalAlpha = 1;
+                            }
+                        });
+
+                        // ===== DICKE GRAUE LINIE FÜR GRAND MEAN (Z=0) =====
+                        const zeroPixel = xScale.getPixelForValue(zGrandMean);
+                        if (zeroPixel >= left && zeroPixel <= left + width) {
+                            ctx.strokeStyle = 'rgba(100, 100, 100, 0.9)';
+                            ctx.lineWidth = 4;
+                            ctx.setLineDash([]);
+                            ctx.beginPath();
+                            ctx.moveTo(zeroPixel, top);
+                            ctx.lineTo(zeroPixel, top + height);
+                            ctx.stroke();
+                        }
+                        
+                        // ===== HORIZONTALE PFEILE FÜR WITHIN-GROUP VARIANZ =====
+                        // Zeichne symmetrische Pfeile um jeden Gruppenmittelwert mit gestrichelter Linie
+                        const arrowLengthZ = withinStd;  // ±1 Standardabweichung
+                        const arrowYOffset = [0.15, 0.28, 0.41];  // Y-Positionen für jede Gruppe
+                        const arrowColors = ['#667eea', '#764ba2', '#ed64a6'];
+                        
+                        means.forEach((mean, idx) => {
+                            const leftZ = mean - arrowLengthZ;
+                            const rightZ = mean + arrowLengthZ;
+                            const leftPixel = xScale.getPixelForValue(leftZ);
+                            const rightPixel = xScale.getPixelForValue(rightZ);
+                            const yPixel = top + height * (1 - arrowYOffset[idx]);
+                            
+                            ctx.strokeStyle = arrowColors[idx];
+                            ctx.fillStyle = arrowColors[idx];
+                            ctx.lineWidth = 2;
+                            ctx.globalAlpha = 0.7;
+                            
+                            // Gestrichelte Linie für WITHIN-GROUP
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath();
+                            ctx.moveTo(leftPixel, yPixel);
+                            ctx.lineTo(rightPixel, yPixel);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                            
+                            // Linker Pfeil
+                            const arrowSize = 8;
+                            ctx.beginPath();
+                            ctx.moveTo(leftPixel, yPixel);
+                            ctx.lineTo(leftPixel + arrowSize, yPixel - arrowSize/2);
+                            ctx.lineTo(leftPixel + arrowSize, yPixel + arrowSize/2);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Rechter Pfeil
+                            ctx.beginPath();
+                            ctx.moveTo(rightPixel, yPixel);
+                            ctx.lineTo(rightPixel - arrowSize, yPixel - arrowSize/2);
+                            ctx.lineTo(rightPixel - arrowSize, yPixel + arrowSize/2);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            ctx.globalAlpha = 1;
+                        });
+                        
+                        // ===== PFEILMIT LEGEND UND BESCHRIFTUNGEN =====
+                        // Legende ist jetzt unten in separatem Bereich
+                        
+                        // ===== HORIZONTALE PFEILE FÜR BETWEEN-GROUP VARIANZ =====
+                        // Zeichne Pfeile vom Grand Mean zu jedem Gruppenmittelwert mit durchgezogener Linie
+                        const betweenYOffset = 0.05;
+                        const betweenYPixel = top + height * (1 - betweenYOffset);
+                        
+                        means.forEach((mean, idx) => {
+                            const meanPixel = xScale.getPixelForValue(mean);
+                            const zeroPixel = xScale.getPixelForValue(zGrandMean);
+                            
+                            ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                            ctx.lineWidth = 2.5;
+                            ctx.globalAlpha = 0.6;
+                            
+                            // Durchgezogene Linie für BETWEEN-GROUP
+                            ctx.setLineDash([]);
+                            ctx.beginPath();
+                            ctx.moveTo(zeroPixel, betweenYPixel);
+                            ctx.lineTo(meanPixel, betweenYPixel);
+                            ctx.stroke();
+                            
+                            // Pfeilspitze am Gruppenmittelwert
+                            const arrowSize = 8;
+                            const direction = meanPixel > zeroPixel ? 1 : -1;
+                            ctx.beginPath();
+                            ctx.moveTo(meanPixel, betweenYPixel);
+                            ctx.lineTo(meanPixel - direction * arrowSize, betweenYPixel - arrowSize/2);
+                            ctx.lineTo(meanPixel - direction * arrowSize, betweenYPixel + arrowSize/2);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            ctx.globalAlpha = 1;
+                        });
+                    }
+                }]
+            });
+        }
+
+        function updateTable() {
+            const allData = [...data1, ...data2, ...data3];
+            const N = allData.length;
+            const k = 3;
+            const grandMean = calcMean(allData);
+            
+            const mean1 = calcMean(data1);
+            const mean2 = calcMean(data2);
+            const mean3 = calcMean(data3);
+            
+            // QS_zwischen
+            const qsBet = sampleSize * (
+                Math.pow(mean1 - grandMean, 2) +
+                Math.pow(mean2 - grandMean, 2) +
+                Math.pow(mean3 - grandMean, 2)
+            );
+            
+            // QS_innerhalb - Summe der Quadrate direkt berechnen (KORRIGIERT)
+            const ss1 = data1.reduce((sum, x) => sum + Math.pow(x - mean1, 2), 0);
+            const ss2 = data2.reduce((sum, x) => sum + Math.pow(x - mean2, 2), 0);
+            const ss3 = data3.reduce((sum, x) => sum + Math.pow(x - mean3, 2), 0);
+            const qsWithin = ss1 + ss2 + ss3;
+            
+            const dfBet = k - 1;
+            const dfWithin = N - k;
+            const msBet = qsBet / dfBet;
+            const msWithin = qsWithin / dfWithin;
+            const fVal = msBet / msWithin;
+            const qsTotal = qsBet + qsWithin;
+            const eta2 = qsBet / qsTotal;
+            
+            // Kritischer F-Wert
+            const fCrit = getFCritical(dfBet, dfWithin);
+            
+            // Tabelle
+            let html = `
+                <tr>
+                    <td><strong>Zwischen</strong></td>
+                    <td class="stat-value">${qsBet.toFixed(0)}</td>
+                    <td class="stat-value">${dfBet}</td>
+                    <td class="stat-value">${msBet.toFixed(0)}</td>
+                    <td class="stat-value">${fVal.toFixed(2)}</td>
+                    <td class="stat-value">${eta2.toFixed(3)}</td>
+                </tr>
+                <tr>
+                    <td><strong>Innerhalb</strong></td>
+                    <td class="stat-value">${qsWithin.toFixed(0)}</td>
+                    <td class="stat-value">${dfWithin}</td>
+                    <td class="stat-value">${msWithin.toFixed(0)}</td>
+                    <td colspan="2" style="text-align: center; color: #999;">—</td>
+                </tr>
+                <tr style="background: #f5f5f5;">
+                    <td><strong>Gesamt</strong></td>
+                    <td class="stat-value">${qsTotal.toFixed(0)}</td>
+                    <td class="stat-value">${N - 1}</td>
+                    <td colspan="3" style="text-align: center; color: #999;">—</td>
+                </tr>
+            `;
+            
+            document.getElementById('tableBody').innerHTML = html;
+            document.getElementById('dfLabel').textContent = `${dfBet}, ${dfWithin}`;
+            document.getElementById('fValue').textContent = fCrit.toFixed(2);
+            
+            // Aktualisiere die F-Wert Formel
+            const formulaBox = document.getElementById('formulaBox');
+            formulaBox.textContent = `F = \\frac{MS_{\\text{zwischen}}}{MS_{\\text{innerhalb}}} = \\frac{${msBet.toFixed(2)}}{${msWithin.toFixed(2)}} = ${fVal.toFixed(2)}`;
+            formulaBox.innerHTML = `$$F = \\frac{MS_{\\text{zwischen}}}{MS_{\\text{innerhalb}}} = \\frac{${msBet.toFixed(2)}}{${msWithin.toFixed(2)}} = ${fVal.toFixed(2)}$$`;
+            
+            // Rerender MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise([formulaBox]).catch(err => console.log(err));
+            }
+        }
+
+        // Hard-coded F-kritische Werte für df1=2 und verschiedene df2
+        function getFCritical(df1, df2, alpha = 0.05) {
+            const fTable = {
+                '2,12': 3.885, '2,27': 3.354, '2,42': 3.22, '2,57': 3.159, 
+                '2,72': 3.124, '2,87': 3.101, '2,102': 3.085, '2,117': 3.074, 
+                '2,132': 3.065, '2,147': 3.058, '2,162': 3.052, '2,177': 3.047, 
+                '2,192': 3.043, '2,207': 3.04, '2,222': 3.037, '2,237': 3.034, 
+                '2,252': 3.032, '2,267': 3.03, '2,282': 3.028, '2,297': 3.026
+            };
+            
+            const key = `${df1},${df2}`;
+            
+            // Wenn exakte Kombination in Tabelle
+            if (fTable[key]) {
+                return fTable[key];
+            }
+            
+            // Sonst interpoliere zwischen nächsten Werten
+            const keys = Object.keys(fTable).map(k => {
+                const parts = k.split(',');
+                return parseInt(parts[1]);
+            }).sort((a, b) => a - b);
+            
+            // Finde die zwei nächsten df2 Werte
+            let lower = keys[0];
+            let upper = keys[keys.length - 1];
+            
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (df2 >= keys[i] && df2 <= keys[i + 1]) {
+                    lower = keys[i];
+                    upper = keys[i + 1];
+                    break;
+                }
+            }
+            
+            // Linear interpolieren
+            const lowerKey = `${df1},${lower}`;
+            const upperKey = `${df1},${upper}`;
+            const fLower = fTable[lowerKey];
+            const fUpper = fTable[upperKey];
+            
+            if (lower === upper) {
+                return fLower;
+            }
+            
+            const interpolated = fLower + (fUpper - fLower) * (df2 - lower) / (upper - lower);
+            return interpolated;
+        }
+
+        
+        // Initial Setup
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.getElementById('effectSlider');
+            slider.min = '0';
+            slider.max = '50';
+            slider.step = '1';
+            slider.value = '0';
+            generateData();
+        });
+    </script>
+</body>
+</html>
