@@ -76,16 +76,16 @@
         }
         .chart-wrapper {
             position: relative;
-            height: 400px;
+            height: 460px;
             background: #f9f9f9;
-            padding: 20px;
+            padding: 10px;
             border-radius: 8px;
             border: 1px solid #e0e0e0;
         }
         .right-panel {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 8px;
         }
         .table-section {
             background: #f9f9f9;
@@ -131,7 +131,7 @@
         }
         .critical-box {
             background: white;
-            padding: 20px;
+            padding: 8px;
             border-radius: 8px;
             border: 1px solid #e0e0e0;
         }
@@ -203,14 +203,14 @@
         .legend-section h3 {
             margin: 0 0 15px 0;
             color: #333;
-            font-size: 14px;
+            font-size: 16px;
         }
         .legend-item {
             display: flex;
             align-items: flex-start;
             gap: 12px;
             margin-bottom: 12px;
-            font-size: 13px;
+            font-size: 16px;
             line-height: 1.5;
         }
         .legend-item:last-child {
@@ -244,18 +244,18 @@
         }
         .formula-box {
             background: #f0f0f8;
-            padding: 15px;
+            padding: 6px;
             border-radius: 8px;
             border: 2px solid #667eea;
-            margin: 15px 0;
+            margin: 3px 0;
             font-family: 'Courier New', monospace;
             text-align: center;
-            line-height: 1.8;
+            line-height: 1.6;
             color: #333;
         }
         .formula-line {
-            margin: 8px 0;
-            font-size: 14px;
+            margin: 5px 0;
+            font-size: 16px;
         }
         .formula-value {
             color: #667eea;
@@ -305,6 +305,12 @@
                         $$F = \frac{MS_{\text{zwischen}}}{MS_{\text{innerhalb}}} = \frac{0.00}{0.00} = 0.00$$
                     </div>
                 </div>
+
+                <div class="formula-box">
+                    <div class="formula-line" id="etaBox">
+                        $$\hat{\eta}^2 = \frac{QS_{\text{zwischen}}}{QS_{\text{gesamt}}} = \frac{0.00}{0.00} = 0.000$$
+                    </div>
+                </div>
                 
                 <div class="critical-box">
                     <div class="critical-label"><strong>Kritischer F-Wert (α = 0.05):</strong></div>
@@ -322,7 +328,7 @@
                     <span class="slider-value" id="effectValue">0</span>
                 </div>
                 <input type="range" id="effectSlider" oninput="onSliderChange()">
-                <div class="info-text">μ₁ = 100, μ₂ = 100 + Δ, μ₃ = 100 - Δ</div>
+                <div class="info-text">Populations-Ebene: μ₂ = μ₁ + Δ, μ₃ = μ₁ - Δ</div>
             </div>
             <div class="slider-container">
                 <div class="slider-label">
@@ -800,9 +806,14 @@
             formulaBox.textContent = `F = \\frac{MS_{\\text{zwischen}}}{MS_{\\text{innerhalb}}} = \\frac{${msBet.toFixed(2)}}{${msWithin.toFixed(2)}} = ${fVal.toFixed(2)}`;
             formulaBox.innerHTML = `$$F = \\frac{MS_{\\text{zwischen}}}{MS_{\\text{innerhalb}}} = \\frac{${msBet.toFixed(2)}}{${msWithin.toFixed(2)}} = ${fVal.toFixed(2)}$$`;
             
+            // Aktualisiere die Eta-Squared Formel
+            const etaBox = document.getElementById('etaBox');
+            etaBox.textContent = `\\hat{\\eta}^2 = \\frac{QS_{\\text{zwischen}}}{QS_{\\text{gesamt}}} = \\frac{${qsBet.toFixed(2)}}{${qsTotal.toFixed(2)}} = ${eta2.toFixed(3)}`;
+            etaBox.innerHTML = `$$\\hat{\\eta}^2 = \\frac{QS_{\\text{zwischen}}}{QS_{\\text{gesamt}}} = \\frac{${qsBet.toFixed(2)}}{${qsTotal.toFixed(2)}} = ${eta2.toFixed(3)}$$`;
+            
             // Rerender MathJax
             if (window.MathJax) {
-                MathJax.typesetPromise([formulaBox]).catch(err => console.log(err));
+                MathJax.typesetPromise([formulaBox, etaBox]).catch(err => console.log(err));
             }
         }
 
